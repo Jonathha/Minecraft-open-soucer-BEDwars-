@@ -1,0 +1,40 @@
+import { BotControlMode } from '../game/entities/botOpponent';
+import { OcclusionStatus } from '../game/anticheat/espManager';
+
+export interface AntiCheatControlsTabProps {
+  vlScore: number;
+  flyEnabled: boolean;
+  speedEnabled: boolean;
+  speedValue: number;
+  espEnabled: boolean;
+  antiEspEnabled: boolean;
+  fakeFovBypass: boolean;
+  aimbotEnabled: boolean;
+  aimbotFov: number;
+  occlusionStatus: OcclusionStatus;
+  opponentDistance: number;
+  isBotActive: boolean;
+  botMode: BotControlMode;
+  botAttack: boolean;
+  lastLog: string;
+  onOpenRejectionLogs?: () => void;
+  onToggleFly: () => void;
+  onToggleSpeed: () => void;
+  onSpeedChange: (val: number) => void;
+  onToggleEsp: () => void;
+  onToggleAntiEsp: () => void;
+  onToggleFakeFovBypass: () => void;
+  onToggleAimbot: () => void;
+  onAimbotFovChange: (val: number) => void;
+  onEnterTestArena: () => void;
+  onSetBotMode: (mode: BotControlMode) => void;
+  onTeleportBotBehindWall: () => void;
+  onTeleportBotNearPlayer: () => void;
+  onTeleportBotToCenter: () => void;
+  onToggleBotAttack: () => void;
+  onSpawnVisualWool?: () => void;
+  onSpawnFakeGhostBlock?: () => void;
+  onAutoTpBed?: () => void;
+  onSimulateBanModal: () => void;
+  onResetVL: () => void;
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix Minecraft BedWars 1v1",
+  "description": "A fully playable 3D Minecraft-inspired Web game with animated main menu, immersive multiplayer lobby, NPCs, real-time 1v1 BedWars, island generators, shops, combat, and bed destruction mechanics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
