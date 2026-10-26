@@ -1,68 +1,121 @@
-import React, { useState } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
-import { sounds } from '../game/audio/soundManager';
+import React from 'react';
 
 interface MainMenuProps {
   onEnter: () => void;
   onPlay1v1?: () => void;
 }
 
+// Medidas em "u": 1u = 1px da imagem de referência (603x339), escalado para caber na tela.
+const u = (n: number) => `calc(var(--u) * ${n})`;
+
+const MenuButton: React.FC<{
+  id: string;
+  left: number;
+  top: number;
+  width: number;
+  onClick?: () => void;
+  children: React.ReactNode;
+}> = ({ id, left, top, width, onClick, children }) => (
+  <button
+    id={id}
+    onClick={onClick}
+    className="absolute flex items-center justify-center text-white hover:text-[#ffffa0] hover:brightness-110 cursor-pointer"
+    style={{
+      left: u(left),
+      top: u(top),
+      width: u(width),
+      height: u(26),
+      background: '#6e6e6e',
+      border: `${u(1)} solid #000`,
+      boxShadow: `inset ${u(1)} ${u(1)} 0 #999999, inset ${u(-1)} ${u(-3)} 0 #555555`,
+      fontFamily: 'Consolas, Menlo, "DejaVu Sans Mono", monospace',
+      fontSize: u(11),
+      textShadow: `${u(1)} ${u(1)} 0 #3e3e3e`,
+      padding: 0,
+    }}
+  >
+    {children}
+  </button>
+);
+
 export const MainMenu: React.FC<MainMenuProps> = ({ onEnter, onPlay1v1 }) => {
-  const [soundEnabled, setSoundEnabled] = useState(sounds.isEnabled());
-
-  const handleToggleSound = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const enabled = sounds.toggleMute();
-    setSoundEnabled(enabled);
-  };
-
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-between p-8 pointer-events-none select-none z-10">
-      {/* Top Bar with Audio Control */}
-      <div className="w-full flex justify-end pointer-events-auto">
-        <button
-          id="btn-sound-toggle"
-          onClick={handleToggleSound}
-          className="p-3 bg-black/50 hover:bg-black/70 border-2 border-stone-600 rounded text-stone-200 hover:text-white transition active:scale-95 cursor-pointer"
-          title={soundEnabled ? 'Mudo' : 'Ativar Som'}
+    <div className="absolute inset-0 pointer-events-none select-none z-10">
+      <div
+        className="absolute"
+        style={{
+          ['--u' as string]: 'min(calc(100vw / 603), calc(100vh / 339))',
+          left: '50%',
+          top: '50%',
+          width: u(603),
+          height: u(339),
+          transform: 'translate(-50%, -50%)',
+        }}
+      >
+        {/* Logo */}
+        <div
+          className="absolute w-full text-center"
+          style={{
+            top: u(34),
+            fontFamily: 'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif',
+            fontSize: u(72),
+            lineHeight: u(66),
+            letterSpacing: u(1),
+            color: '#a8a8a8',
+            WebkitTextStroke: `${u(3)} #000`,
+            paintOrder: 'stroke fill',
+            textShadow: `0 ${u(4)} 0 #3b3b3b`,
+          }}
         >
-          {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
-        </button>
-      </div>
-
-      {/* Center Game Title & Action Buttons */}
-      <div className="flex flex-col items-center gap-6 pointer-events-auto my-auto max-w-md w-full">
-        <div className="text-center drop-shadow-[0_6px_8px_rgba(0,0,0,0.8)]">
-          <h1 className="text-5xl md:text-7xl font-black tracking-wider text-amber-300 drop-shadow-[0_4px_0_#78350f]">
-            MINECRAFT
-          </h1>
-          <div className="text-xl md:text-2xl font-extrabold tracking-widest text-emerald-400 mt-1 uppercase">
-            BedWars 1v1
-          </div>
+          MINECRAFT
+        </div>
+        <div
+          className="absolute w-full text-center"
+          style={{
+            top: u(92),
+            fontFamily: 'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif',
+            fontSize: u(26),
+            lineHeight: u(24),
+            letterSpacing: u(2),
+            color: '#c4c4c4',
+            WebkitTextStroke: `${u(2)} #000`,
+            paintOrder: 'stroke fill',
+          }}
+        >
+          JAVA EDITION
         </div>
 
-        <div className="flex flex-col gap-3 w-full px-4">
-          <button
-            id="btn-play-1v1"
-            onClick={onPlay1v1 || onEnter}
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xl md:text-2xl tracking-widest uppercase rounded border-b-4 border-emerald-800 shadow-2xl hover:scale-102 active:scale-98 transition-all duration-150 cursor-pointer flex items-center justify-center gap-2"
-          >
-            <span>⚔️</span> JOGAR 1v1 BEDWARS
-          </button>
-
-          <button
-            id="btn-enter-lobby"
-            onClick={onEnter}
-            className="w-full py-3 bg-stone-800/90 hover:bg-stone-700/90 active:bg-stone-900 text-stone-200 hover:text-white font-bold text-lg tracking-widest uppercase rounded border-2 border-stone-600 shadow-xl hover:scale-102 active:scale-98 transition-all duration-150 cursor-pointer flex items-center justify-center gap-2"
-          >
-            <span>🏰</span> ENTRAR NO LOBBY
-          </button>
+        {/* Splash */}
+        <div
+          className="absolute whitespace-nowrap font-bold"
+          style={{
+            left: u(473),
+            top: u(85),
+            transform: 'translate(-50%, -50%) rotate(-20deg)',
+            fontFamily: 'Consolas, Menlo, "DejaVu Sans Mono", monospace',
+            fontSize: u(18),
+            color: '#ffff00',
+            textShadow: `${u(1.5)} ${u(1.5)} 0 #3f3f00`,
+          }}
+        >
+          90% bug free!
         </div>
-      </div>
 
-      {/* Footer controls guide */}
-      <div className="text-stone-300/80 text-xs font-mono bg-black/60 px-4 py-2 rounded pointer-events-auto text-center max-w-lg">
-        <span className="text-emerald-400 font-bold">Controles:</span> WASD para mover | Espaço para pular | Mouse para olhar | Clique esquerdo para atacar/quebrar | Clique direito para colocar bloco | [E] Interagir
+        {/* Botões (posições e larguras medidas na referência) */}
+        <div className="pointer-events-auto">
+          <MenuButton id="btn-play-1v1" left={159} top={157} width={284} onClick={onPlay1v1 || onEnter}>
+            Um jogador
+          </MenuButton>
+          <MenuButton id="btn-enter-lobby" left={159} top={191} width={284} onClick={onEnter}>
+            Multijogador
+          </MenuButton>
+          <MenuButton id="btn-options" left={159} top={293} width={139}>
+            Opções...
+          </MenuButton>
+          <MenuButton id="btn-quit-game" left={305} top={293} width={138} onClick={() => window.close()}>
+            Sair do jogo
+          </MenuButton>
+        </div>
       </div>
     </div>
   );
