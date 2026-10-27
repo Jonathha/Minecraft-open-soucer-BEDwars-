@@ -13,6 +13,7 @@ export class PlayerController {
   public pitch = 0;
   public speed = 6.2;
   public isMoving = false;
+  public zLimit: number | null = null; // barreira: |z| máximo (só na partida)
 
   // Anti-Cheat Test Controls (Fly & Speed)
   public isFlyEnabled = false;
@@ -100,6 +101,10 @@ export class PlayerController {
       this.isGrounded
     );
     this.isGrounded = isFlying ? false : collision.isGrounded;
+    if (this.zLimit !== null) {
+      if (this.position.z > this.zLimit) { this.position.z = this.zLimit; if (this.velocity.z > 0) this.velocity.z = 0; }
+      else if (this.position.z < -this.zLimit) { this.position.z = -this.zLimit; if (this.velocity.z < 0) this.velocity.z = 0; }
+    }
 
     const eyeOffset = (this.isSneaking && !isFlying) ? 1.48 : 1.62;
     this.camera.position.set(this.position.x, this.position.y + eyeOffset, this.position.z);

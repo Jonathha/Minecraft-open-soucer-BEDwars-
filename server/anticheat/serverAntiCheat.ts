@@ -96,7 +96,7 @@ export class ServerAntiCheatEngine {
     return res;
   }
 
-  public processBedBreak(ws: WebSocket & { id?: string; team?: 'red' | 'blue' }, targetTeam: 'red' | 'blue', match: { redBed: boolean; blueBed: boolean }): CheckResult {
+  public processBedBreak(ws: WebSocket & { id?: string; team?: 'red' | 'blue' }, targetTeam: 'red' | 'blue', match: { redBed: boolean; blueBed: boolean; blocks?: Array<{ x: number; y: number; z: number }> }): CheckResult {
     if (!ws.id) return { allowed: false };
     const player = this.players.get(ws.id);
     if (!player) return { allowed: false };

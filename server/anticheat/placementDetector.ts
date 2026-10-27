@@ -1,6 +1,7 @@
 import { ServerPlayerData, CheckResult } from './types';
 import { isSolidBlockOnServer } from './serverWorldBlocks';
 import { checkPlacementReach, deductServerBlockInventory } from './serverPlacementReach';
+import { hasFaceSupport, hasAnyNeighbor, isAimingAtPlacement } from './serverPlacementAim';
 
 export { isSolidBlockOnServer };
 
@@ -17,7 +18,7 @@ export interface BlockPlacePayload {
 
 export class PlacementDetector {
   private static readonly MAX_PLACE_REACH = 6.8;
-  private static readonly MAX_PLACES_PER_SEC = 25;
+  private static readonly MAX_PLACES_PER_SEC = 14;
 
   public static checkPlacement(
     player: ServerPlayerData,
@@ -39,50 +40,6 @@ export class PlacementDetector {
           cause: 'Bloco marcado como isVisual ou não verificado pela loja do servidor.',
         },
       };
-    }
-
-    if (block.cameraDir && block.cameraPos) {
-      const cPos = block.cameraPos;
-      const cDir = block.cameraDir;
-      const targetX = block.x;
-      const targetY = block.y;
-      const targetZ = block.z;
-
-      const normFaceX = block.faceNormal ? Math.round(block.faceNormal.x) : 0;
-      const normFaceY = block.faceNormal ? Math.round(block.faceNormal.y) : 0;
-      const normFaceZ = block.faceNormal ? Math.round(block.faceNormal.z) : 0;
-
-      const sourceX = targetX - normFaceX;
-      const sourceY = targetY - normFaceY;
-      const sourceZ = targetZ - normFaceZ;
-
-      const dTargetX = targetX - cPos.x;
-      const dTargetY = targetY - cPos.y;
-      const dTargetZ = targetZ - cPos.z;
-      const lenTarget = Math.sqrt(dTargetX * dTargetX + dTargetY * dTargetY + dTargetZ * dTargetZ) || 1;
-      const dotTarget = (cDir.x * dTargetX + cDir.y * dTargetY + cDir.z * dTargetZ) / lenTarget;
-
-      const dSourceX = sourceX - cPos.x;
-      const dSourceY = sourceY - cPos.y;
-      const dSourceZ = sourceZ - cPos.z;
-      const lenSource = Math.sqrt(dSourceX * dSourceX + dSourceY * dSourceY + dSourceZ * dSourceZ) || 1;
-      const dotSource = (cDir.x * dSourceX + cDir.y * dSourceY + cDir.z * dSourceZ) / lenSource;
-
-      if (dotTarget < 0.25 && dotSource < 0.25) {
-        return {
-          allowed: false,
-          violation: {
-            category: 'PLACEMENT',
-            rule: 'Scaffold / No-Look Placement',
-            weight: 3.0,
-            details: `Server detected placement without looking at block at (${targetX}, ${targetY}, ${targetZ})`,
-            timestamp: now,
-            file: 'server/anticheat/placementDetector.ts',
-            error: 'ERR_SERVER_SCAFFOLD_NOLOOK',
-            cause: 'O servidor detectou colocação de bloco sem alinhamento de mira (Scaffold No-Look).',
-          },
-        };
-      }
     }
 
     const isWool = block.type === 6 || block.type === 7 || block.type === 8;
@@ -131,50 +88,12 @@ export class PlacementDetector {
       };
     }
 
-    let hasDirectNeighbor = false;
-    // Busca em uma área de 3x3x3 ao redor do bloco alvo (incluindo diagonais e quinas)
-    // Isso evita o efeito dominó onde um único bloco rejeitado por lag arruina toda a ponte do jogador
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dz = -1; dz <= 1; dz++) {
-          if (dx === 0 && dy === 0 && dz === 0) continue;
-          if (isSolidBlockOnServer(block.x + dx, block.y + dy, block.z + dz, roomBlocks)) {
-            hasDirectNeighbor = true;
-            break;
-          }
-        }
-        if (hasDirectNeighbor) break;
-      }
-      if (hasDirectNeighbor) break;
-    }
+    // Alvo já ocupado: rejeita sem punir
+    if (isSolidBlockOnServer(block.x, block.y, block.z, roomBlocks)) return { allowed: false };
 
-    // Checa se é adjacente a blocos recentemente colocados pelo jogador (evita dessincronização por lag)
-    if (!hasDirectNeighbor && player.recentPlacedBlocks && player.recentPlacedBlocks.length > 0) {
-      for (const b of player.recentPlacedBlocks) {
-        if (now - b.timestamp < 3000) {
-          const dx = Math.abs(block.x - b.x);
-          const dy = Math.abs(block.y - b.y);
-          const dz = Math.abs(block.z - b.z);
-          if (dx <= 1 && dy <= 1 && dz <= 1 && (dx + dy + dz > 0)) {
-            hasDirectNeighbor = true;
-            break;
-          }
-        }
-      }
-    }
-
-    // Checa se é um pillar jump legítimo (bloco colocado sob os pés iniciando a partir de solo legítimo)
-    if (!hasDirectNeighbor && player.lastLegitGroundedPos && player.lastPos) {
-      const isUnderFeet = Math.abs(block.x - player.lastPos.x) <= 1.25 && Math.abs(block.z - player.lastPos.z) <= 1.25;
-      const isNearGroundedBase = Math.abs(block.x - player.lastLegitGroundedPos.x) <= 1.5 &&
-        Math.abs(block.z - player.lastLegitGroundedPos.z) <= 1.5 &&
-        (block.y >= player.lastLegitGroundedPos.y - 1.5 && block.y <= player.lastLegitGroundedPos.y + 2.5);
-      if (isUnderFeet && isNearGroundedBase) {
-        hasDirectNeighbor = true;
-      }
-    }
-
-    if (!hasDirectNeighbor) {
+    // O bloco precisa encostar numa FACE de um bloco sólido; só diagonal é rejeitada sem punir (evita efeito dominó)
+    if (!hasFaceSupport(block, roomBlocks)) {
+      if (hasAnyNeighbor(block, roomBlocks)) return { allowed: false };
       return {
         allowed: false,
         violation: {
@@ -186,6 +105,23 @@ export class PlacementDetector {
           file: 'server/anticheat/placementDetector.ts',
           error: 'ERR_SCAFFOLD_AIR_PLACE',
           cause: 'O bloco está sendo colocado no ar ou sobre uma superfície não existente no servidor.',
+        },
+      };
+    }
+
+    // Mira conferida pela rotação (yaw/pitch) que o servidor conhece, nunca pelo que vem no pacote do bloco
+    if (player.lastPitch !== undefined && player.lastPos && !isAimingAtPlacement(player, block, roomBlocks)) {
+      return {
+        allowed: false,
+        violation: {
+          category: 'PLACEMENT',
+          rule: 'Scaffold / No-Look Placement',
+          weight: 2.0,
+          details: `Colocou bloco em (${block.x}, ${block.y}, ${block.z}) sem estar mirando nele`,
+          timestamp: now,
+          file: 'server/anticheat/placementDetector.ts',
+          error: 'ERR_SERVER_SCAFFOLD_NOLOOK',
+          cause: 'A mira conhecida pelo servidor não aponta para o local do bloco colocado.',
         },
       };
     }

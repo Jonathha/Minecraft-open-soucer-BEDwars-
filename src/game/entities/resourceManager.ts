@@ -37,7 +37,9 @@ export class ResourceManager {
     for (const dGen of locs.diamondGens) {
       this.createBeacon(dGen, 0x38bdf8, 0.45);
     }
-    this.createBeacon(locs.emeraldGen, 0x22c55e, 0.55);
+    for (const eGen of locs.emeraldGens) {
+      this.createBeacon(eGen, 0x22c55e, 0.55);
+    }
   }
 
   private createBeacon(pos: THREE.Vector3, color: number, size: number) {
@@ -83,7 +85,9 @@ export class ResourceManager {
     this.emeraldTimer += delta;
     if (this.emeraldTimer >= 26) {
       this.emeraldTimer = 0;
-      this.spawn('emerald', this.arenaLocs.emeraldGen);
+      for (const eGen of this.arenaLocs.emeraldGens) {
+        this.spawn('emerald', eGen);
+      }
     }
 
     for (const beacon of this.beacons) {

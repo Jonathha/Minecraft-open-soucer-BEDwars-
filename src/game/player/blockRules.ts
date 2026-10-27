@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { BlockType, GameState, HotbarItem, Team } from '../../types/game';
 import { VoxelWorld } from '../world/voxelWorld';
-import { ArenaLocations } from '../world/arenaBuilder';
+import { ArenaLocations, ARENA_BARRIER_Z } from '../world/arenaBuilder';
 
 export function getBlockHardness(type: BlockType, heldItem?: HotbarItem): number {
   let baseHardness = 1.2;
@@ -75,6 +75,7 @@ export function canPlaceBlock(
   playerPos: THREE.Vector3
 ): boolean {
   if (state !== 'match') return false;
+  if (Math.abs(placePos.z) > ARENA_BARRIER_Z - 1) return false;
 
   // Block bounding box (1x1x1 cube at placePos)
   const bMinX = placePos.x - 0.49;

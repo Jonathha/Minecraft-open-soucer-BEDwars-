@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GameEngine } from './gameEngine';
 import { sounds } from './audio/soundManager';
 import { updateMenuCamera } from './world/menuScene';
+import { ARENA_BARRIER_Z } from './world/arenaBuilder';
 
 export function updateEngineFrame(engine: GameEngine, delta: number, time: number, accumulator: { value: number; uiSyncTimer: number }) {
   if (delta > 0) {
@@ -11,6 +12,7 @@ export function updateEngineFrame(engine: GameEngine, delta: number, time: numbe
   if (engine.state === 'menu') {
     updateMenuCamera(engine.camera, time);
   } else if (engine.state === 'lobby') {
+    engine.player.zLimit = null;
     engine.player.update(delta, engine.world);
     engine.antiCheat.update(delta, engine.player, engine.world);
     engine.npcs.update(time, engine.player.position);
@@ -22,6 +24,7 @@ export function updateEngineFrame(engine: GameEngine, delta: number, time: numbe
       engine.player.teleport(new THREE.Vector3(0, 1, 8), Math.PI);
     }
   } else if (engine.state === 'match') {
+    engine.player.zLimit = ARENA_BARRIER_Z - 0.28;
     engine.player.update(delta, engine.world);
     engine.antiCheat.update(delta, engine.player, engine.world);
     engine.testSimulator.update(delta, engine);
@@ -62,7 +65,9 @@ export function updateEngineFrame(engine: GameEngine, delta: number, time: numbe
         engine.player.keys,
         engine.player.isGrounded,
         dt,
-        { x: engine.player.velocity.x, y: engine.player.velocity.y, z: engine.player.velocity.z }
+        { x: engine.player.velocity.x, y: engine.player.velocity.y, z: engine.player.velocity.z },
+        undefined,
+        engine.player.pitch
       );
       accumulator.value = 0;
     }

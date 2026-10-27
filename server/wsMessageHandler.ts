@@ -6,10 +6,13 @@ import { handleServerViolation } from './anticheat/serverViolationHandler';
 
 export function handleWsMessage(ws: ClientSocket, raw: any, antiCheat: ServerAntiCheatEngine) {
   ws.lastSeen = Date.now();
+  if (!ws.msgWindowStart || ws.lastSeen - ws.msgWindowStart > 1000) { ws.msgWindowStart = ws.lastSeen; ws.msgCount = 0; }
+  ws.msgCount = (ws.msgCount || 0) + 1;
+  if (ws.msgCount > 300) { ws.close(1008, 'Rate limit'); return; }
   try {
     const msg = JSON.parse(raw.toString());
     if (msg.type === 'queue:join') {
-      ws.name = msg.name || 'Player';
+      ws.name = String(msg.name || 'Player').slice(0, 24);
       if (!queue.includes(ws)) queue.push(ws);
       send(ws, 'queue:status', { inQueue: true, position: queue.length });
       tryMatchmaking();
@@ -18,17 +21,21 @@ export function handleWsMessage(ws: ClientSocket, raw: any, antiCheat: ServerAnt
       if (idx !== -1) queue.splice(idx, 1);
       send(ws, 'queue:status', { inQueue: false });
     } else if (msg.type === 'match:start') {
-      const roomId = msg.roomId || `room_${ws.id}`;
+      // A sala vem do matchmaking (ws.room); o roomId enviado pelo cliente é ignorado
+      const roomId = ws.room || `room_${ws.id}`;
       ws.room = roomId;
       ws.initializedRoom = roomId;
       const defaultSpawn = ws.team === 'blue' ? { x: 0, y: 12, z: -21 } : { x: 0, y: 12, z: 21 };
-      const spawnPos = (msg.spawnPos && typeof msg.spawnPos.x === 'number' && typeof msg.spawnPos.y === 'number' && typeof msg.spawnPos.z === 'number')
+      // Com time definido pelo matchmaking o spawn é do servidor; só partida sem time (solo/teste) usa o spawn enviado
+      const spawnPos = (!ws.team && msg.spawnPos && typeof msg.spawnPos.x === 'number' && typeof msg.spawnPos.y === 'number' && typeof msg.spawnPos.z === 'number')
         ? msg.spawnPos
         : defaultSpawn;
       if (!ws.team && spawnPos) ws.team = spawnPos.z < 0 ? 'blue' : 'red';
       if (ws.id) {
         antiCheat.resetPlayerMatchState(ws.id, spawnPos);
         PredictionAntiCheat.handleRespawn(ws.id, spawnPos);
+        const startData = antiCheat.getPlayerData(ws.id);
+        if (startData) { startData.awaitingRespawn = false; startData.deathTime = undefined; startData.spawnAnchor = { ...spawnPos }; }
       }
 
       const existingMatch = matches.get(roomId);
@@ -41,11 +48,18 @@ export function handleWsMessage(ws: ClientSocket, raw: any, antiCheat: ServerAnt
       }
     } else if (msg.type === 'player:respawn') {
       const roomId = ws.room || `room_${ws.id}`;
-      const defaultSpawn = ws.team === 'blue' ? { x: 0, y: 12, z: -21 } : { x: 0, y: 12, z: 21 };
-      const spawnPos = (msg.spawnPos && typeof msg.spawnPos.x === 'number' && typeof msg.spawnPos.y === 'number' && typeof msg.spawnPos.z === 'number')
-        ? msg.spawnPos
-        : defaultSpawn;
-      if (!ws.team && spawnPos) ws.team = spawnPos.z < 0 ? 'blue' : 'red';
+      const respawnData = ws.id ? antiCheat.getPlayerData(ws.id) : undefined;
+      let spawnPos = { x: 0, y: 1, z: 8 }; // lobby
+      if (ws.initializedRoom) {
+        // Em partida: só reaparece após uma morte registrada, com a cama viva e o atraso mínimo; o ponto é do servidor
+        const room = matches.get(roomId);
+        const ownBedAlive = !room || (ws.team === 'blue' ? room.blueBed : room.redBed);
+        if (!respawnData || !respawnData.awaitingRespawn || !ownBedAlive || Date.now() - (respawnData.deathTime || 0) < 1000) return;
+        spawnPos = ws.team === 'blue' ? { x: 0, y: 12, z: -21 } : { x: 0, y: 12, z: 21 };
+        respawnData.awaitingRespawn = false;
+        respawnData.deathTime = undefined;
+        respawnData.spawnAnchor = { ...spawnPos };
+      }
       if (ws.id) {
         antiCheat.resetPlayerRespawnState(ws.id, spawnPos);
         PredictionAntiCheat.handleRespawn(ws.id, spawnPos);
@@ -150,6 +164,10 @@ export function handleWsMessage(ws: ClientSocket, raw: any, antiCheat: ServerAnt
     } else if (msg.type === 'block:place' || msg.type === 'block:break' || msg.type === 'bed:break') {
       handleBlockAndBed(ws, msg, antiCheat);
     } else if (msg.type === 'player:death') {
+      const deathData = ws.id ? antiCheat.getPlayerData(ws.id) : undefined;
+      if (!ws.initializedRoom || !deathData || deathData.awaitingRespawn) return;
+      deathData.awaitingRespawn = true;
+      deathData.deathTime = Date.now();
       const roomId = ws.room || `room_${ws.id}`;
       if (ws.id) antiCheat.resetPlayerDeathState(ws.id);
       broadcastMatch(roomId, 'player:died', { team: ws.team });

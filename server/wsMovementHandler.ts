@@ -4,6 +4,7 @@ import { PredictionAntiCheat } from './anticheat/predictionAntiCheat';
 import { handleServerViolation } from './anticheat/serverViolationHandler';
 import { rollbackLastPlacedBlock } from './wsRollbackBlock';
 import { broadcastMovementWithAntiEsp } from './wsAntiEspHelper';
+import { ARENA_BARRIER_Z } from './anticheat/serverWorldBlocks';
 
 export function handlePlayerMovement(
   ws: ClientSocket,
@@ -18,6 +19,7 @@ export function handlePlayerMovement(
     if (typeof msg.ping === 'number') pData.lastPing = Math.round(msg.ping);
     if (typeof msg.fps === 'number') pData.lastFps = Math.round(msg.fps);
     pData.lastClientGrounded = Boolean(msg.isGrounded);
+    if (typeof msg.pitch === 'number' && Number.isFinite(msg.pitch)) pData.lastPitch = Math.max(-1.5708, Math.min(1.5708, msg.pitch));
   }
   if (msg.isTeleport && pData) {
     // Só aceita isTeleport se o servidor autorizou o teleporte previamente (ex: pérola validada ou respawn)
@@ -32,6 +34,10 @@ export function handlePlayerMovement(
     }
   }
   const lastValidPos = pData && pData.lastPos ? { ...pData.lastPos } : undefined;
+  if (Math.abs(msg.pos.z) > ARENA_BARRIER_Z) {
+    if (lastValidPos) send(ws, 'player:teleport', { pos: lastValidPos });
+    return;
+  }
 
   const check = antiCheat.processMovement(ws, msg.pos, msg.rot || 0, match.blocks, msg.keys, msg.isGrounded);
   if (!check.allowed) {

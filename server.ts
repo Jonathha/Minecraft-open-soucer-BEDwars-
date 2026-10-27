@@ -10,7 +10,7 @@ import { handleWsMessage, handleWsClose } from './server/wsMessageHandler';
 const app = express();
 const PORT = 3000;
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 32 * 1024 });
 const antiCheat = new ServerAntiCheatEngine();
 
 setInterval(checkMatchTimeouts, 2000);
@@ -19,6 +19,7 @@ wss.on('connection', (ws: ClientSocket) => {
   ws.id = `usr_${Math.random().toString(36).slice(2, 9)}`;
   antiCheat.registerPlayer(ws.id);
 
+  ws.on('error', () => {}); // erro de um socket (ex.: payload acima do limite) não pode derrubar o servidor
   ws.on('message', (raw) => {
     handleWsMessage(ws, raw, antiCheat);
   });

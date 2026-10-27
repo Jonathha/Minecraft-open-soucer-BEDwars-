@@ -18,7 +18,22 @@ export function handleServerViolation(
     .filter(v => (v.expiresAt || (v.timestamp + 8000)) > now)
     .reduce((sum, v) => sum + v.weight, 0);
 
-  if (ws.readyState === WebSocket.OPEN) {
+  // Em produção o cliente não recebe regra, limites nem arquivos (ANTICHEAT_DEBUG=1 reativa para testes)
+  const hideDetails = process.env.NODE_ENV === 'production' && process.env.ANTICHEAT_DEBUG !== '1';
+
+  if (ws.readyState === WebSocket.OPEN && hideDetails) {
+    ws.send(JSON.stringify({
+      type: 'anticheat:flag',
+      rule: violation.category,
+      details: '',
+      vl: player.violationLevel,
+      category: violation.category,
+      error: 'ERR_ANTICHEAT',
+      file: '',
+      cause: '',
+      timestamp: violation.timestamp || now
+    }));
+  } else if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       type: 'anticheat:flag',
       rule: violation.rule,
@@ -40,8 +55,8 @@ export function handleServerViolation(
   if (player.violationLevel >= kickThreshold && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       type: 'anticheat:kick',
-      reason: `Kicked by Server Anti-Cheat: ${violation.rule}`,
-      details: violation.details
+      reason: hideDetails ? 'Kicked by Server Anti-Cheat' : `Kicked by Server Anti-Cheat: ${violation.rule}`,
+      details: hideDetails ? '' : violation.details
     }));
     ws.close(4001, 'Kicked by Anti-Cheat');
   }

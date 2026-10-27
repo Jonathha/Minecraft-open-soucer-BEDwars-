@@ -7,6 +7,8 @@ export interface ClientSocket extends WebSocket {
   team?: 'red' | 'blue';
   initializedRoom?: string;
   lastSeen?: number;
+  msgWindowStart?: number;
+  msgCount?: number;
 }
 
 export interface MatchRoom {

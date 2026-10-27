@@ -11,7 +11,7 @@ import { ServerPlayerData, Vector3D, CheckResult } from './types';
  */
 export class FakeLagDetector {
   private static readonly MAX_PACKETS_PER_SEC = 85; // High refresh rate & network batching safety
-  private static readonly MAX_BLINK_TELEPORT_DIST = 25.0; // Max allowed distance after packet starvation
+  private static readonly MAX_BLINK_TELEPORT_DIST = 16.0; // Max allowed distance after packet starvation
 
   public static checkPacketRateAndBlink(
     player: ServerPlayerData,
@@ -56,7 +56,7 @@ export class FakeLagDetector {
     if (timeSinceLastPacket > 1.5) {
       // Calculate average speed over the full elapsed time (ping compensation)
       const avgSpeed = dist / timeSinceLastPacket;
-      const MAX_LEGIT_SPEED = 14.0;
+      const MAX_LEGIT_SPEED = 12.0;
 
       // If average speed over the silent duration exceeds max sprint speed -> Fake Lag / Blink hack
       if (avgSpeed > MAX_LEGIT_SPEED && dist > this.MAX_BLINK_TELEPORT_DIST) {

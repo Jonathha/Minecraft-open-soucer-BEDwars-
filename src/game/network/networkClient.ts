@@ -105,7 +105,8 @@ export class NetworkClient {
     isGrounded?: boolean,
     dt?: number,
     velocity?: { x: number; y: number; z: number },
-    isTeleport?: boolean
+    isTeleport?: boolean,
+    pitch?: number
   ) {
     this.send('player:move', {
       pos,
@@ -115,6 +116,7 @@ export class NetworkClient {
       dt,
       velocity,
       isTeleport,
+      pitch,
       ping: this.currentPing,
       fps: this.currentFps
     });

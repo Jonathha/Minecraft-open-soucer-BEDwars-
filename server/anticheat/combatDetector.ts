@@ -19,7 +19,7 @@ export interface CombatHitPayload {
  */
 export class CombatDetector {
   private static readonly MAX_REACH_DISTANCE = 3.9; // Strict 3.9m (legit Minecraft reach is 3.0m, 3.9m allows ping)
-  private static readonly MAX_SINGLE_HIT_DAMAGE = 40; // Max allowed damage per single hit
+  private static readonly MAX_SINGLE_HIT_DAMAGE = 7; // Maior dano de arma do catálogo (espada de diamante)
   private static readonly MAX_ATTACKS_PER_SEC = 14;   // Max allowed attack hits per second
 
   public static checkHit(
@@ -106,8 +106,9 @@ export class CombatDetector {
       // 4. Direction / Look Angle Check (KillAura / Blind attack detector)
       const distXZ = Math.hypot(dX, dZ);
       if (distXZ > 0.4) {
-        let lookX = hitData.dir ? hitData.dir.x : -Math.sin(attacker.lastRot || 0);
-        let lookZ = hitData.dir ? hitData.dir.z : -Math.cos(attacker.lastRot || 0);
+        // Direção vem da rotação já conhecida pelo servidor, não do `dir` enviado no golpe
+        let lookX = -Math.sin(attacker.lastRot || 0);
+        let lookZ = -Math.cos(attacker.lastRot || 0);
         const lookLen = Math.hypot(lookX, lookZ);
 
         if (lookLen > 0.01) {

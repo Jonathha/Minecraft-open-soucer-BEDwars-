@@ -1,3 +1,6 @@
+// Barreira atrás de cada ilha base: |z| máximo permitido para andar/construir (igual ao cliente).
+export const ARENA_BARRIER_Z = 33;
+
 export function isSolidBlockOnServer(
   x: number,
   y: number,
@@ -13,8 +16,8 @@ export function isSolidBlockOnServer(
     return true;
   }
 
-  // 2. Check Red Base Island (Center 0, 10, 22; radius 6; floor at Y in 2..10)
-  if (ry >= 2 && ry <= 10 && Math.hypot(rx, rz - 22) <= 6) {
+  // 2. Check Red Base Island (Center 0, 10, 22; radius 9; floor at Y in 2..10)
+  if (ry >= 2 && ry <= 10 && Math.hypot(rx, rz - 22) <= 9) {
     return true;
   }
   // Red Bed & Shops at Y = 11
@@ -23,8 +26,8 @@ export function isSolidBlockOnServer(
     if ((rx === -4 || rx === 4) && rz === 22) return true; // Shops
   }
 
-  // 3. Check Blue Base Island (Center 0, 10, -22; radius 6; floor at Y in 2..10)
-  if (ry >= 2 && ry <= 10 && Math.hypot(rx, rz + 22) <= 6) {
+  // 3. Check Blue Base Island (Center 0, 10, -22; radius 9; floor at Y in 2..10)
+  if (ry >= 2 && ry <= 10 && Math.hypot(rx, rz + 22) <= 9) {
     return true;
   }
   // Blue Bed & Shops at Y = 11
@@ -33,25 +36,8 @@ export function isSolidBlockOnServer(
     if ((rx === -4 || rx === 4) && rz === -22) return true; // Shops
   }
 
-  // 4. Check Center Emerald Island (Center 0, 12, 0; radius 5; floor at Y in 5..12)
-  if (ry >= 5 && ry <= 12 && Math.hypot(rx, rz) <= 5) {
-    return true;
-  }
-  // Center emerald, glowstone & pillars
-  if (rx === 0 && rz === 0 && (ry === 13 || ry === 14)) return true;
-  if (ry === 13 && Math.abs(rx) === 3 && Math.abs(rz) === 3) return true;
-
-  // 5. Check West Diamond Island (Center -18, 11, 0; radius 4; floor at Y in 5..11)
-  if (ry >= 5 && ry <= 11 && Math.hypot(rx + 18, rz) <= 4) {
-    return true;
-  }
-  if (rx === -18 && rz === 0 && (ry === 12 || ry === 13)) return true;
-
-  // 6. Check East Diamond Island (Center 18, 11, 0; radius 4; floor at Y in 5..11)
-  if (ry >= 5 && ry <= 11 && Math.hypot(rx - 18, rz) <= 4) {
-    return true;
-  }
-  if (rx === 18 && rz === 0 && (ry === 12 || ry === 13)) return true;
+  // 4. Diamond (x = -6) & Emerald (x = 6) generators on each base island (Y = 11..12)
+  if ((ry === 11 || ry === 12) && Math.abs(rz) === 25 && Math.abs(rx) === 6) return true;
 
   // Check Central Bridging Highway / Bot's Bridge (Center bridge at x = 0, y = 11, z in -15..15)
   if (rx === 0 && ry === 11 && rz >= -15 && rz <= 15) {

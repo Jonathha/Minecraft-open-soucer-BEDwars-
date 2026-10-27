@@ -100,4 +100,14 @@ export interface ServerPlayerData {
 
   // Server-authoritative Ender Pearl tracking
   activePearl?: { origin: Vector3D; throwTime: number; dir: Vector3D };
+
+  // Morte/respawn e spawn definidos pelo servidor
+  lastPitch?: number; // inclinação da mira (vem dos pacotes de movimento)
+  awaitingRespawn?: boolean;
+  deathTime?: number;
+  spawnAnchor?: Vector3D;
+
+  // Taxa de quebra de blocos
+  breakCountWindow?: number;
+  lastBreakResetTime?: number;
 }

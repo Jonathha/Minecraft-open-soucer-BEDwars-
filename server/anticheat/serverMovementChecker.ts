@@ -14,6 +14,24 @@ export function runMovementCheck(
 ): CheckResult {
   const now = Date.now();
   if (player.isFirstPacket || (player.teleportBypassUntil && now < player.teleportBypassUntil)) {
+    if (player.isFirstPacket && player.spawnAnchor) {
+      const anchor = player.spawnAnchor;
+      const off = Math.hypot(pos.x - anchor.x, pos.z - anchor.z);
+      if (off > 8) {
+        return {
+          allowed: false,
+          setbackPos: { ...anchor },
+          violation: {
+            category: 'TELEPORT',
+            rule: 'Spawn Teleport',
+            weight: 6.0,
+            details: `Primeira posição após o spawn a ${off.toFixed(1)}m do ponto definido pelo servidor`,
+            timestamp: now,
+          },
+        };
+      }
+    }
+    if (player.isFirstPacket) player.spawnAnchor = undefined;
     player.isFirstPacket = false;
     player.lastPos = { ...pos };
     player.lastPosTime = now;

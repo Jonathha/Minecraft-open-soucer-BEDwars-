@@ -21,6 +21,15 @@ export const SERVER_SHOP_CATALOG: Record<string, ServerShopItem> = {
   iron_armor: { id: 'iron_armor', costType: 'gold', costAmount: 12, count: 1 },
   diamond_armor: { id: 'diamond_armor', costType: 'emerald', costAmount: 6, count: 1 },
   ender_pearl: { id: 'ender_pearl', costType: 'emerald', costAmount: 0, count: 1 },
+  // IDs usados pelo cliente (equipmentShopData.ts)
+  armor_chain: { id: 'armor_chain', costType: 'iron', costAmount: 40, count: 1 },
+  armor_iron: { id: 'armor_iron', costType: 'gold', costAmount: 12, count: 1 },
+  armor_diamond: { id: 'armor_diamond', costType: 'emerald', costAmount: 6, count: 1 },
+  golden_apple: { id: 'golden_apple', costType: 'gold', costAmount: 3, count: 1 },
+  fireball: { id: 'fireball', costType: 'iron', costAmount: 40, count: 1 },
+  shears: { id: 'shears', costType: 'iron', costAmount: 20, count: 1 },
+  pickaxe_wood: { id: 'pickaxe_wood', costType: 'iron', costAmount: 10, count: 1 },
+  pickaxe_iron: { id: 'pickaxe_iron', costType: 'gold', costAmount: 3, count: 1 },
 };
 
 export function validateAndProcessShopBuy(
@@ -52,11 +61,13 @@ export function validateAndProcessShopBuy(
 
   player.resources.iron += passiveIron;
   player.resources.gold += passiveGold;
+  player.resources.diamond += Math.floor(elapsedSinceLastSync / 18);
+  player.resources.emerald += Math.floor(elapsedSinceLastSync / 26);
   player.lastResourceSyncTime = now;
 
   const costType = catalogItem.costType;
   const costAmount = catalogItem.costAmount;
-  const margin = costType === 'iron' ? 16 : costType === 'gold' ? 4 : 0;
+  const margin = costType === 'iron' ? 16 : costType === 'gold' ? 4 : 1;
   const availableResource = player.resources[costType];
 
   if (availableResource + margin < costAmount) {

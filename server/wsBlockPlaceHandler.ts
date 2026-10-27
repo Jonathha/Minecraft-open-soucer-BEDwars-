@@ -1,5 +1,6 @@
 import { ClientSocket, send, broadcastMatch } from './matchmaking';
 import { ServerAntiCheatEngine } from './anticheat/serverAntiCheat';
+import { ARENA_BARRIER_Z } from './anticheat/serverWorldBlocks';
 
 export function handleBlockPlace(
   ws: ClientSocket,
@@ -16,6 +17,17 @@ export function handleBlockPlace(
     type: msg.block.type,
     isVisual: msg.block.isVisual,
   };
+  if (Math.abs(normalizedBlock.z) > ARENA_BARRIER_Z - 1) {
+    send(ws, 'block:rejected', {
+      pos: normalizedBlock,
+      rule: 'Arena Barrier',
+      reason: 'Construção além da barreira da arena',
+      file: 'server/wsBlockPlaceHandler.ts',
+      error: 'ERR_ARENA_BARRIER',
+      cause: 'Não é possível construir atrás da barreira.',
+    });
+    return;
+  }
   const check = antiCheat.processBlockPlace(ws, normalizedBlock, match.blocks);
   if (!check.allowed) {
     send(ws, 'block:rejected', {
